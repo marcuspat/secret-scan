@@ -24,7 +24,7 @@ impl From<&str> for OutputFormat {
 
 fn main() {
     let matches = Command::new("secretscan")
-        .version("0.1.0")
+        .version("0.2.0")
         .author("Secretscan Team")
         .about("A Rust CLI tool for detecting secrets in codebases")
         .arg(
