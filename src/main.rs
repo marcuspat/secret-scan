@@ -1,7 +1,7 @@
 use clap::{Arg, ArgAction, Command};
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
-use secretscanner::{output::*, Scanner};
+use secretscan::{output::*, ContextFilter, Scanner};
 use std::fs;
 use std::path::PathBuf;
 use std::process;
@@ -23,9 +23,9 @@ impl From<&str> for OutputFormat {
 }
 
 fn main() {
-    let matches = Command::new("secretscanner")
+    let matches = Command::new("secretscan")
         .version("0.1.0")
-        .author("Secret Scanner Team")
+        .author("Secretscan Team")
         .about("A Rust CLI tool for detecting secrets in codebases")
         .arg(
             Arg::new("path")
@@ -57,12 +57,19 @@ fn main() {
                 .help("Suppress progress bar")
                 .action(ArgAction::SetTrue),
         )
+        .arg(
+            Arg::new("skip-tests")
+                .long("skip-tests")
+                .help("Skip test files and test-related patterns to reduce false positives")
+                .action(ArgAction::SetTrue),
+        )
         .get_matches();
 
     let scan_path = PathBuf::from(matches.get_one::<String>("path").unwrap());
     let format = OutputFormat::from(matches.get_one::<String>("format").unwrap().as_str());
     let output_file = matches.get_one::<String>("output");
     let quiet = matches.get_flag("quiet");
+    let skip_tests = matches.get_flag("skip-tests");
 
     // Validate scan path
     if !scan_path.exists() {
@@ -74,14 +81,21 @@ fn main() {
         process::exit(1);
     }
 
-    // Create scanner
-    let scanner = match Scanner::new() {
+    // Create scanner with appropriate context filter
+    let mut scanner = match Scanner::new() {
         Ok(s) => s,
         Err(e) => {
             eprintln!("{} Failed to create scanner: {}", "Error:".red().bold(), e);
             process::exit(1);
         }
     };
+
+    // Configure context filter based on CLI flags
+    if skip_tests {
+        scanner.set_context_filter(ContextFilter::new());
+    } else {
+        scanner.set_context_filter(ContextFilter::none());
+    }
 
     // Setup progress bar
     let progress = if !quiet {

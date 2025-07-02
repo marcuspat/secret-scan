@@ -1,4 +1,4 @@
-use secretscanner::entropy::*;
+use secretscan::entropy::*;
 
 #[test]
 fn test_shannon_entropy_high() {

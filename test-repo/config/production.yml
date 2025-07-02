@@ -1,0 +1,22 @@
+# Production configuration
+database:
+  host: localhost
+  port: 5432
+  username: admin
+  password: supersecret123
+
+aws:
+  access_key_id: AKIAIOSFODNN7PRODKEY
+  secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYPRODKEY
+  region: us-east-1
+
+services:
+  github:
+    token: ghp_prod1234567890abcdefghijklmnopqrstuv
+  google:
+    api_key: AIzaSyProdKeyDdI0hCZtE6vySjMm-WEfRq3CPz
+  stripe:
+    secret_key: sk_test_FAKE1234567890DEMO1234567890
+
+monitoring:
+  datadog_api_key: dd0f1234567890abcdef1234567890ab

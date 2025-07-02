@@ -1,8 +1,9 @@
-use secretscanner::patterns::*;
+use secretscan::patterns::*;
 
 #[test]
 fn test_aws_access_key_pattern() {
-    let pattern = aws_access_key_pattern();
+    let patterns = get_all_patterns();
+    let pattern = patterns.get("AWS Access Key").unwrap();
 
     // Valid AWS access keys
     assert!(pattern.is_match("AKIAIOSFODNN7EXAMPLE"));
@@ -17,7 +18,8 @@ fn test_aws_access_key_pattern() {
 
 #[test]
 fn test_github_token_pattern() {
-    let pattern = github_token_pattern();
+    let patterns = get_all_patterns();
+    let pattern = patterns.get("GitHub Token").unwrap();
 
     // Valid GitHub tokens
     assert!(pattern.is_match("ghp_1234567890abcdefghijklmnopqrstuvwxyz"));
@@ -31,7 +33,8 @@ fn test_github_token_pattern() {
 
 #[test]
 fn test_google_api_key_pattern() {
-    let pattern = google_api_key_pattern();
+    let patterns = get_all_patterns();
+    let pattern = patterns.get("Google API Key").unwrap();
 
     // Valid Google API keys
     assert!(pattern.is_match("AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI"));
@@ -53,7 +56,7 @@ fn test_all_patterns_combined() {
     let test_text = "AKIAIOSFODNN7EXAMPLE and ghp_1234567890abcdefghijklmnopqrstuvwxyz and AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI";
 
     let mut matches = 0;
-    for (_name, pattern) in &patterns {
+    for (_name, pattern) in patterns.iter() {
         if pattern.is_match(test_text) {
             matches += 1;
         }

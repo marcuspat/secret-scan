@@ -1,0 +1,33 @@
+# Configuration for cargo-release
+
+# Sign commits and tags
+sign-commit = true
+sign-tag = true
+
+# Run these commands before release
+pre-release-hook = ["cargo test", "cargo clippy -- -D warnings", "cargo fmt -- --check"]
+
+# Commit message for version bump
+pre-release-commit-message = "chore: release version {{version}}"
+
+# Don't push to remote automatically
+push = false
+
+# Don't publish to crates.io automatically  
+publish = false
+
+# Tag format
+tag-prefix = "v"
+tag-message = "Release version {{version}}"
+
+# Update these files with version
+pre-release-replacements = [
+  {file="README.md", search="secretscan/v[0-9.]+", replace="secretscan/v{{version}}"},
+  {file="README.md", search="secretscan [0-9.]+", replace="secretscan {{version}}"},
+  {file="src/main.rs", search="version = \"[0-9.]+\"", replace="version = \"{{version}}\""},
+]
+
+# Changelog generation
+[[pre-release-hook]]
+command = "git"
+args = ["cliff", "-o", "CHANGELOG.md", "--tag", "v{{version}}"]

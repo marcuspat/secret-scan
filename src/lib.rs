@@ -1,3 +1,4 @@
+pub mod context;
 pub mod entropy;
 pub mod output;
 pub mod patterns;
@@ -16,6 +17,7 @@ pub struct Finding {
     pub entropy: Option<f64>,
 }
 
+pub use context::*;
 pub use entropy::*;
 pub use output::*;
 pub use patterns::*;
