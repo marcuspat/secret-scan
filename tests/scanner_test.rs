@@ -43,6 +43,13 @@ fn test_scan_respects_gitignore() {
     let temp_dir = TempDir::new().unwrap();
     let temp_path = temp_dir.path();
     
+    // Initialize git repository for ignore crate to work
+    std::process::Command::new("git")
+        .arg("init")
+        .current_dir(temp_path)
+        .output()
+        .unwrap();
+    
     // Create .gitignore
     fs::write(temp_path.join(".gitignore"), "ignored_file.txt\n").unwrap();
     
