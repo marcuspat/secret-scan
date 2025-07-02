@@ -1,6 +1,10 @@
 use crate::context::ContextFilter;
 use crate::entropy::shannon_entropy;
-use crate::patterns::get_all_patterns_owned;
+use crate::patterns::{
+    get_all_patterns_owned, analyze_base64_for_secrets, analyze_hex_for_secrets,
+    analyze_url_encoded_for_secrets, analyze_character_array_for_secrets,
+    is_suspicious_base64, is_suspicious_hex
+};
 use crate::Finding;
 use ignore::WalkBuilder;
 use rayon::prelude::*;
@@ -312,6 +316,10 @@ impl Scanner {
                     }
                 }
             }
+            
+            // Additional analysis for obfuscated secrets
+            let additional_findings = self.analyze_obfuscated_secrets(&line, line_number, file_path);
+            findings.extend(additional_findings);
         }
 
         Ok(findings)
@@ -512,6 +520,10 @@ impl Scanner {
                     }
                 }
             }
+            
+            // Additional analysis for obfuscated secrets
+            let additional_findings = Self::analyze_obfuscated_secrets_static(&line, line_number, file_path, context_filter);
+            findings.extend(additional_findings);
         }
 
         Ok(findings)
@@ -585,6 +597,10 @@ impl Scanner {
                         }
                     }
                 }
+                
+                // Additional analysis for obfuscated secrets
+                let additional_findings = Self::analyze_obfuscated_secrets_static(line, global_line_number, file_path, context_filter);
+                findings.extend(additional_findings);
             }
 
             overlap_buffer = if lines_to_process < lines.len() {
@@ -618,6 +634,10 @@ impl Scanner {
                             }
                         }
                     }
+                    
+                    // Additional analysis for obfuscated secrets in overlap buffer
+                    let additional_findings = Self::analyze_obfuscated_secrets_static(&overlap_buffer, global_line_number, file_path, context_filter);
+                    findings.extend(additional_findings);
                 }
                 break;
             }
@@ -812,5 +832,119 @@ impl Scanner {
             },
             _ => false,
         }
+    }
+    
+    /// Analyze line for obfuscated/encoded secrets
+    fn analyze_obfuscated_secrets(&self, line: &str, line_number: usize, file_path: &Path) -> Vec<Finding> {
+        Self::analyze_obfuscated_secrets_static(line, line_number, file_path, &self.context_filter)
+    }
+    
+    /// Static version of obfuscated secret analysis
+    fn analyze_obfuscated_secrets_static(line: &str, line_number: usize, file_path: &Path, context_filter: &ContextFilter) -> Vec<Finding> {
+        let mut findings = Vec::new();
+        
+        // Analyze suspicious base64 strings
+        let base64_regex = regex::Regex::new(r#"["']([A-Za-z0-9+/]{20,}={0,2})["']"#).unwrap();
+        for cap in base64_regex.captures_iter(line) {
+            if let Some(b64_match) = cap.get(1) {
+                let b64_string = b64_match.as_str();
+                
+                if is_suspicious_base64(b64_string, line) {
+                    let decoded_secrets = analyze_base64_for_secrets(b64_string);
+                    for (pattern_name, decoded_value) in decoded_secrets {
+                        // Apply context filtering
+                        if !context_filter.should_skip_line(line, &decoded_value) {
+                            let entropy = shannon_entropy(b64_string);
+                            
+                            findings.push(Finding {
+                                file_path: file_path.to_path_buf(),
+                                line_number,
+                                line_content: line.to_string(),
+                                pattern_name,
+                                matched_text: format!("{} (base64: {})", decoded_value, b64_string),
+                                entropy: Some(entropy),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Analyze suspicious hex strings
+        let hex_regex = regex::Regex::new(r#"["']([a-fA-F0-9]{40,})["']"#).unwrap();
+        for cap in hex_regex.captures_iter(line) {
+            if let Some(hex_match) = cap.get(1) {
+                let hex_string = hex_match.as_str();
+                
+                if is_suspicious_hex(hex_string, line) {
+                    let decoded_secrets = analyze_hex_for_secrets(hex_string);
+                    for (pattern_name, decoded_value) in decoded_secrets {
+                        // Apply context filtering
+                        if !context_filter.should_skip_line(line, &decoded_value) {
+                            let entropy = shannon_entropy(hex_string);
+                            
+                            findings.push(Finding {
+                                file_path: file_path.to_path_buf(),
+                                line_number,
+                                line_content: line.to_string(),
+                                pattern_name,
+                                matched_text: format!("{} (hex: {})", decoded_value, hex_string),
+                                entropy: Some(entropy),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Analyze URL encoded strings
+        let url_encoded_regex = regex::Regex::new(r#"["']([^"']*%[0-9A-Fa-f]{2}[^"']*)["']"#).unwrap();
+        for cap in url_encoded_regex.captures_iter(line) {
+            if let Some(url_match) = cap.get(1) {
+                let url_string = url_match.as_str();
+                
+                let decoded_secrets = analyze_url_encoded_for_secrets(url_string);
+                for (pattern_name, decoded_value) in decoded_secrets {
+                    // Apply context filtering
+                    if !context_filter.should_skip_line(line, &decoded_value) {
+                        let entropy = shannon_entropy(url_string);
+                        
+                        findings.push(Finding {
+                            file_path: file_path.to_path_buf(),
+                            line_number,
+                            line_content: line.to_string(),
+                            pattern_name,
+                            matched_text: format!("{} (url-encoded: {})", decoded_value, url_string),
+                            entropy: Some(entropy),
+                        });
+                    }
+                }
+            }
+        }
+        
+        // Analyze character arrays
+        let char_array_regex = regex::Regex::new(r"\[(?:\s*\d+\s*,?\s*){10,}\]").unwrap();
+        for mat in char_array_regex.find_iter(line) {
+            let array_string = mat.as_str();
+            
+            let decoded_secrets = analyze_character_array_for_secrets(array_string);
+            for (pattern_name, decoded_value) in decoded_secrets {
+                // Apply context filtering
+                if !context_filter.should_skip_line(line, &decoded_value) {
+                    let entropy = shannon_entropy(array_string);
+                    
+                    findings.push(Finding {
+                        file_path: file_path.to_path_buf(),
+                        line_number,
+                        line_content: line.to_string(),
+                        pattern_name,
+                        matched_text: format!("{} (char-array: {})", decoded_value, array_string),
+                        entropy: Some(entropy),
+                    });
+                }
+            }
+        }
+        
+        findings
     }
 }
