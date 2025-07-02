@@ -40,14 +40,14 @@ jobs:
       shell: bash
       run: |
         mkdir -p artifacts
-        cp target/${{ matrix.target }}/release/secretscanner${{ matrix.binary-suffix }} artifacts/
-        tar -czf secretscanner-${{ matrix.target }}.tar.gz -C artifacts .
+        cp target/${{ matrix.target }}/release/secretscan${{ matrix.binary-suffix }} artifacts/
+        tar -czf secretscan-${GITHUB_REF#refs/tags/}-${{ matrix.target }}.tar.gz -C artifacts .
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: secretscanner-${{ matrix.target }}
-        path: secretscanner-${{ matrix.target }}.tar.gz
+        name: secretscan-${{ matrix.target }}
+        path: secretscan-*.tar.gz
 
   create-release:
     name: Create Release
@@ -61,7 +61,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          secretscanner-*/secretscanner-*.tar.gz
+          secretscan-*/secretscan-*.tar.gz
         draft: false
         prerelease: false
       env:

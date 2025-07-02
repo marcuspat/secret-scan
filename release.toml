@@ -22,9 +22,17 @@ tag-message = "Release version {{version}}"
 
 # Update these files with version
 pre-release-replacements = [
+  # Update version in title
+  {file="README.md", search="# secretscan 🔍 v[0-9.]+", replace="# secretscan 🔍 v{{version}}"},
+  # Update download links
+  {file="README.md", search="secretscan-v[0-9.]+-x86_64", replace="secretscan-v{{version}}-x86_64"},
+  # Update any other version references
   {file="README.md", search="secretscan/v[0-9.]+", replace="secretscan/v{{version}}"},
   {file="README.md", search="secretscan [0-9.]+", replace="secretscan {{version}}"},
+  # Update version in main.rs if using clap
   {file="src/main.rs", search="version = \"[0-9.]+\"", replace="version = \"{{version}}\""},
+  # Update CHANGELOG
+  {file="CHANGELOG.md", search="## \\[Unreleased\\]", replace="## [Unreleased]\n\n## [{{version}}] - {{date}}"},
 ]
 
 # Changelog generation
