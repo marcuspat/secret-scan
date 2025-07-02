@@ -38,7 +38,7 @@ By participating in this project, you agree to abide by our code of conduct. Ple
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/secretscan.git
+git clone https://github.com/marcuspat/secret-scan.git
 cd secretscan
 
 # Install dependencies and build
