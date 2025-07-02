@@ -83,7 +83,7 @@ impl Scanner {
 
     /// Optimized parallel scanning with rayon
     pub fn scan_directory_optimized(&self, path: &Path) -> Result<Vec<Finding>, ScannerError> {
-        // Build file list
+        // Build file list with improved file type coverage
         let walker = WalkBuilder::new(path)
             .hidden(false)
             .git_ignore(true)
@@ -99,7 +99,16 @@ impl Scanner {
                 if entry.path().components().any(|c| c.as_os_str() == ".git") {
                     return false;
                 }
-                // Apply context filtering
+                
+                // Enhanced file type filtering - ensure we scan important file types
+                let _path_str = entry.path().to_string_lossy().to_lowercase();
+                let is_scannable_file = self.is_scannable_file_type(entry.path());
+                
+                // Apply context filtering only if file type is scannable
+                if !is_scannable_file {
+                    return false;
+                }
+                
                 !self.context_filter.should_skip_path(entry.path())
             })
             .map(|entry| entry.path().to_path_buf())
@@ -119,6 +128,92 @@ impl Scanner {
             .collect();
 
         Ok(all_findings)
+    }
+
+    /// Enhanced file type filtering to ensure we scan all relevant files
+    fn is_scannable_file_type(&self, path: &Path) -> bool {
+        let path_str = path.to_string_lossy().to_lowercase();
+        
+        // Always scan text-based files regardless of extension
+        let text_extensions = [
+            ".txt", ".md", ".json", ".yaml", ".yml", ".xml", ".ini", ".cfg", ".conf",
+            ".env", ".properties", ".toml", ".log", ".sql", ".sh", ".bat", ".ps1",
+            ".js", ".jsx", ".ts", ".tsx", ".py", ".rb", ".php", ".java", ".cs", ".go",
+            ".rs", ".c", ".cpp", ".h", ".hpp", ".swift", ".kt", ".scala", ".clj",
+            ".html", ".css", ".scss", ".less", ".vue", ".svelte", ".dockerfile",
+            ".pem", ".key", ".crt", ".cer", ".p12", ".pfx", ".jks"
+        ];
+        
+        // Check for known text extensions
+        for ext in &text_extensions {
+            if path_str.ends_with(ext) {
+                return true;
+            }
+        }
+        
+        // Handle files without extensions - check if they're likely text files
+        if let Some(filename) = path.file_name() {
+            let filename_str = filename.to_string_lossy().to_lowercase();
+            
+            // Common config files without extensions
+            let config_files = [
+                "dockerfile", "makefile", "rakefile", "gemfile", "procfile",
+                "vagrantfile", "gruntfile", "gulpfile", "webpack", "babel",
+                ".gitignore", ".dockerignore", ".env", ".envrc", ".bashrc",
+                ".zshrc", ".profile", ".vimrc", ".tmux", "config", "settings"
+            ];
+            
+            for config in &config_files {
+                if filename_str == *config || filename_str.contains(config) {
+                    return true;
+                }
+            }
+            
+            // If no extension, try to detect if it's a text file by reading first few bytes
+            if !filename_str.contains('.') {
+                return self.is_likely_text_file(path);
+            }
+        }
+        
+        // Skip binary files
+        let binary_extensions = [
+            ".exe", ".dll", ".so", ".dylib", ".a", ".lib", ".o", ".obj",
+            ".zip", ".tar", ".gz", ".7z", ".rar", ".jar", ".war", ".ear",
+            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".ico", ".tiff",
+            ".mp3", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".wav", ".ogg",
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+            ".bin", ".dat", ".db", ".sqlite", ".sqlite3", ".mdb", ".accdb"
+        ];
+        
+        for ext in &binary_extensions {
+            if path_str.ends_with(ext) {
+                return false;
+            }
+        }
+        
+        // Default to scanning unknown files
+        true
+    }
+    
+    /// Detect if a file without extension is likely a text file
+    fn is_likely_text_file(&self, path: &Path) -> bool {
+        match std::fs::File::open(path) {
+            Ok(mut file) => {
+                let mut buffer = [0; 512];
+                match file.read(&mut buffer) {
+                    Ok(bytes_read) if bytes_read > 0 => {
+                        // Check if the first 512 bytes are mostly printable ASCII/UTF-8
+                        let text_bytes = buffer[..bytes_read].iter()
+                            .filter(|&&b| b.is_ascii_graphic() || b.is_ascii_whitespace())
+                            .count();
+                        let ratio = text_bytes as f32 / bytes_read as f32;
+                        ratio > 0.7 // If more than 70% are text characters, consider it text
+                    }
+                    _ => false
+                }
+            }
+            Err(_) => false
+        }
     }
 
     /// Legacy parallel scanning method (for comparison)
@@ -203,15 +298,18 @@ impl Scanner {
                     }
 
                     let entropy = shannon_entropy(&matched_text);
-
-                    findings.push(Finding {
-                        file_path: file_path.to_path_buf(),
-                        line_number,
-                        line_content: line.clone(),
-                        pattern_name: pattern_name.clone(),
-                        matched_text,
-                        entropy: Some(entropy),
-                    });
+                    
+                    // Apply adaptive entropy filtering based on pattern type and context
+                    if Self::should_include_by_entropy_static(pattern_name, &matched_text, entropy, &line) {
+                        findings.push(Finding {
+                            file_path: file_path.to_path_buf(),
+                            line_number,
+                            line_content: line.clone(),
+                            pattern_name: pattern_name.clone(),
+                            matched_text,
+                            entropy: Some(entropy),
+                        });
+                    }
                 }
             }
         }
@@ -287,15 +385,18 @@ impl Scanner {
                         }
 
                         let entropy = shannon_entropy(&matched_text);
-
-                        findings.push(Finding {
-                            file_path: file_path.to_path_buf(),
-                            line_number: global_line_number,
-                            line_content: line.to_string(),
-                            pattern_name: pattern_name.clone(),
-                            matched_text,
-                            entropy: Some(entropy),
-                        });
+                        
+                        // Apply adaptive entropy filtering
+                        if self.should_include_by_entropy(pattern_name, &matched_text, entropy, line) {
+                            findings.push(Finding {
+                                file_path: file_path.to_path_buf(),
+                                line_number: global_line_number,
+                                line_content: line.to_string(),
+                                pattern_name: pattern_name.clone(),
+                                matched_text,
+                                entropy: Some(entropy),
+                            });
+                        }
                     }
                 }
             }
@@ -322,15 +423,18 @@ impl Scanner {
                                 .should_skip_line(&overlap_buffer, &matched_text)
                             {
                                 let entropy = shannon_entropy(&matched_text);
-
-                                findings.push(Finding {
-                                    file_path: file_path.to_path_buf(),
-                                    line_number: global_line_number,
-                                    line_content: overlap_buffer.clone(),
-                                    pattern_name: pattern_name.clone(),
-                                    matched_text,
-                                    entropy: Some(entropy),
-                                });
+                                
+                                // Apply adaptive entropy filtering
+                                if Self::should_include_by_entropy_static(pattern_name, &matched_text, entropy, &overlap_buffer) {
+                                    findings.push(Finding {
+                                        file_path: file_path.to_path_buf(),
+                                        line_number: global_line_number,
+                                        line_content: overlap_buffer.clone(),
+                                        pattern_name: pattern_name.clone(),
+                                        matched_text,
+                                        entropy: Some(entropy),
+                                    });
+                                }
                             }
                         }
                     }
@@ -394,15 +498,18 @@ impl Scanner {
                     }
 
                     let entropy = shannon_entropy(&matched_text);
-
-                    findings.push(Finding {
-                        file_path: file_path.to_path_buf(),
-                        line_number,
-                        line_content: line.clone(),
-                        pattern_name: pattern_name.clone(),
-                        matched_text,
-                        entropy: Some(entropy),
-                    });
+                    
+                    // Apply adaptive entropy filtering based on pattern type and context
+                    if Self::should_include_by_entropy_static(pattern_name, &matched_text, entropy, &line) {
+                        findings.push(Finding {
+                            file_path: file_path.to_path_buf(),
+                            line_number,
+                            line_content: line.clone(),
+                            pattern_name: pattern_name.clone(),
+                            matched_text,
+                            entropy: Some(entropy),
+                        });
+                    }
                 }
             }
         }
@@ -496,15 +603,18 @@ impl Scanner {
 
                             if !context_filter.should_skip_line(&overlap_buffer, &matched_text) {
                                 let entropy = shannon_entropy(&matched_text);
-
-                                findings.push(Finding {
-                                    file_path: file_path.to_path_buf(),
-                                    line_number: global_line_number,
-                                    line_content: overlap_buffer.clone(),
-                                    pattern_name: pattern_name.clone(),
-                                    matched_text,
-                                    entropy: Some(entropy),
-                                });
+                                
+                                // Apply adaptive entropy filtering
+                                if Self::should_include_by_entropy_static(pattern_name, &matched_text, entropy, &overlap_buffer) {
+                                    findings.push(Finding {
+                                        file_path: file_path.to_path_buf(),
+                                        line_number: global_line_number,
+                                        line_content: overlap_buffer.clone(),
+                                        pattern_name: pattern_name.clone(),
+                                        matched_text,
+                                        entropy: Some(entropy),
+                                    });
+                                }
                             }
                         }
                     }
@@ -556,5 +666,151 @@ impl Scanner {
         // For now, return None to indicate it's not implemented
         // In a real implementation, this would return (current_mb, peak_mb)
         None
+    }
+    
+    /// Adaptive entropy filtering based on pattern type and context
+    fn should_include_by_entropy(&self, pattern_name: &str, matched_text: &str, entropy: f64, line: &str) -> bool {
+        Self::should_include_by_entropy_static(pattern_name, matched_text, entropy, line)
+    }
+    
+    /// Static version of entropy filtering for use in parallel processing
+    fn should_include_by_entropy_static(pattern_name: &str, matched_text: &str, entropy: f64, line: &str) -> bool {
+        // Pattern-specific entropy thresholds
+        let entropy_threshold = match pattern_name {
+            // High-entropy patterns that should always be included
+            "AWS Access Key" | "AWS Access Key ID" | "GitHub Token" | "Google API Key" 
+            | "OpenAI API Key" | "Stripe API Key" | "SendGrid API Key" | "Slack Token" 
+            | "Twilio API Key" | "Mailgun API Key" | "Firebase API Key" | "DigitalOcean Token"
+            | "Discord Token" | "Shopify Token" | "GitLab Token" => 2.5,
+            
+            // JWT tokens should have high entropy but allow some variation
+            "JWT Token" => 3.0,
+            
+            // Database URLs and connection strings can have mixed entropy
+            "PostgreSQL URL" | "MySQL URL" | "MongoDB URL" | "Redis URL" 
+            | "Connection String" | "Database URL" => 2.0,
+            
+            // Password patterns need context-aware filtering
+            "Password in JSON" | "Password in YAML" | "Password Environment Variable" 
+            | "Password in URL" => {
+                // Check if it looks like a real password vs test data
+                if Self::looks_like_real_password(matched_text, line) {
+                    1.5 // Lower threshold for contextual passwords
+                } else {
+                    4.0 // Higher threshold to filter test data
+                }
+            },
+            
+            // Generic secrets need higher entropy to avoid noise
+            "Generic Secret" | "Generic OAuth Secret" | "Generic Client ID" => 3.0,
+            
+            // Private keys - pattern matching is usually sufficient
+            "RSA Private Key" | "EC Private Key" | "PGP Private Key" | "SSH Private Key" 
+            | "Generic Private Key" | "Multi-line Private Key" => 1.0,
+            
+            // Azure and cloud provider patterns
+            "Azure Tenant ID" | "Azure Client Secret" => 2.5,
+            "PayPal Client ID" | "PayPal Secret" => 2.5,
+            
+            // Default threshold for unknown patterns
+            _ => 3.0,
+        };
+        
+        // Always include if entropy meets threshold
+        if entropy >= entropy_threshold {
+            return true;
+        }
+        
+        // Additional context checks for borderline cases
+        Self::has_strong_context_indicators(pattern_name, matched_text, line)
+    }
+    
+    /// Check if a password looks real based on context and structure
+    fn looks_like_real_password(password: &str, line: &str) -> bool {
+        let line_lower = line.to_lowercase();
+        let password_lower = password.to_lowercase();
+        
+        // Skip obvious test passwords
+        let test_indicators = [
+            "test", "dummy", "fake", "example", "sample", "placeholder",
+            "password123", "secret123", "changeme", "default", "admin"
+        ];
+        
+        for indicator in &test_indicators {
+            if password_lower.contains(indicator) || line_lower.contains(indicator) {
+                return false;
+            }
+        }
+        
+        // Look for production environment indicators
+        let prod_indicators = [
+            "prod", "production", "live", "staging", "config", "env",
+            "secret", "password", "key", "auth", "token"
+        ];
+        
+        let has_prod_context = prod_indicators.iter().any(|&indicator| {
+            line_lower.contains(indicator) && !line_lower.contains("test")
+        });
+        
+        // Check password complexity
+        let has_mixed_case = password.chars().any(char::is_uppercase) && password.chars().any(char::is_lowercase);
+        let has_numbers = password.chars().any(char::is_numeric);
+        let has_special = password.chars().any(|c| !c.is_alphanumeric());
+        let is_long_enough = password.len() >= 8;
+        
+        // Consider it real if it has production context or decent complexity
+        has_prod_context || (is_long_enough && (has_mixed_case || has_numbers || has_special))
+    }
+    
+    /// Check for strong context indicators that suggest a real secret
+    fn has_strong_context_indicators(pattern_name: &str, matched_text: &str, line: &str) -> bool {
+        let line_lower = line.to_lowercase();
+        
+        // Strong positive indicators
+        let positive_indicators = [
+            "production", "prod", "live", "staging", "config", "env",
+            "secret", "private", "credential", "auth", "api", "token",
+            "database", "db", "server", "host", "endpoint"
+        ];
+        
+        // Strong negative indicators (test/example context)
+        let negative_indicators = [
+            "test", "spec", "example", "sample", "dummy", "fake",
+            "placeholder", "mock", "fixture", "demo"
+        ];
+        
+        // Check for negative indicators first
+        for indicator in &negative_indicators {
+            if line_lower.contains(indicator) {
+                return false;
+            }
+        }
+        
+        // Check for positive indicators
+        let has_positive = positive_indicators.iter().any(|&indicator| {
+            line_lower.contains(indicator)
+        });
+        
+        if has_positive {
+            return true;
+        }
+        
+        // Pattern-specific context checks
+        match pattern_name {
+            "GitHub OAuth" => {
+                // GitHub OAuth tokens are 40 char hex strings, but need to be in right context
+                matched_text.len() == 40 && matched_text.chars().all(|c| c.is_ascii_hexdigit())
+                    && (line_lower.contains("github") || line_lower.contains("oauth") || line_lower.contains("token"))
+            },
+            "Azure Tenant ID" => {
+                // UUID format in Azure context
+                line_lower.contains("azure") || line_lower.contains("tenant") || line_lower.contains("directory")
+            },
+            "Heroku API Key" => {
+                // UUID format in Heroku context
+                line_lower.contains("heroku") || line_lower.contains("app") || line_lower.contains("dyno")
+            },
+            _ => false,
+        }
     }
 }
