@@ -1,4 +1,4 @@
-# secretscan 🔍 v0.2.0
+# secretscan 🔍 v0.2.1
 
 [![CI](https://github.com/marcuspat/secret-scan/workflows/CI/badge.svg)](https://github.com/marcuspat/secret-scan/actions)
 [![Crates.io](https://img.shields.io/crates/v/secretscan.svg)](https://crates.io/crates/secretscan)
@@ -29,9 +29,9 @@ cargo install secretscan
 
 Download pre-built binaries from the [latest release](https://github.com/marcuspat/secret-scan/releases/latest):
 
-- Linux: `secretscan-v0.2.0-x86_64-unknown-linux-gnu.tar.gz`
-- macOS: `secretscan-v0.2.0-x86_64-apple-darwin.tar.gz`
-- Windows: `secretscan-v0.2.0-x86_64-pc-windows-msvc.tar.gz`
+- Linux: `secretscan-v0.2.1-x86_64-unknown-linux-gnu.tar.gz`
+- macOS: `secretscan-v0.2.1-x86_64-apple-darwin.tar.gz`
+- Windows: `secretscan-v0.2.1-x86_64-pc-windows-msvc.tar.gz`
 
 ### From Source
 
