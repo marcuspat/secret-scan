@@ -10,9 +10,9 @@ pub fn format_as_text(findings: &[Finding]) -> String {
     if findings.is_empty() {
         return "No secrets found.".to_string();
     }
-    
+
     let mut output = String::new();
-    
+
     for finding in findings {
         output.push_str(&format!(
             "File: {}\nline {}: {}\nPattern: {}\nMatch: {}\nEntropy: {:.1}\n\n",
@@ -24,7 +24,7 @@ pub fn format_as_text(findings: &[Finding]) -> String {
             finding.entropy.unwrap_or(0.0)
         ));
     }
-    
+
     output
 }
 
@@ -32,16 +32,16 @@ pub fn generate_summary(findings: &[Finding]) -> String {
     if findings.is_empty() {
         return "No secrets found.".to_string();
     }
-    
+
     let mut pattern_counts = HashMap::new();
     for finding in findings {
         *pattern_counts.entry(&finding.pattern_name).or_insert(0) += 1;
     }
-    
+
     let mut summary = format!("{} secrets found:\n", findings.len());
     for (pattern, count) in pattern_counts {
         summary.push_str(&format!("{}: {}\n", pattern, count));
     }
-    
+
     summary
 }
