@@ -1,5 +1,5 @@
-use secretscanner::output::*;
-use secretscanner::Finding;
+use secretscan::output::*;
+use secretscan::Finding;
 use std::path::PathBuf;
 
 #[test]

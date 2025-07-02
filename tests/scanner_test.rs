@@ -1,5 +1,5 @@
-use secretscanner::scanner::*;
-use secretscanner::Finding;
+use secretscan::scanner::*;
+use secretscan::Finding;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
