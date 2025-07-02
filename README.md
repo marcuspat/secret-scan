@@ -1,6 +1,7 @@
 # secretscan 🔍
 
 [![CI](https://github.com/marcuspat/secret-scan/workflows/CI/badge.svg)](https://github.com/marcuspat/secret-scan/actions)
+[![Crates.io](https://img.shields.io/crates/v/secretscan.svg)](https://crates.io/crates/secretscan)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=flat&logo=rust&logoColor=white)](https://www.rust-lang.org)
 
