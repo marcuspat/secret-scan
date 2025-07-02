@@ -1,6 +1,6 @@
 # secretscan 🔍
 
-[![CI](https://github.com/yourusername/secretscan/workflows/CI/badge.svg)](https://github.com/yourusername/secretscan/actions)
+[![CI](https://github.com/marcuspat/secret-scan/workflows/CI/badge.svg)](https://github.com/marcuspat/secret-scan/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=flat&logo=rust&logoColor=white)](https://www.rust-lang.org)
 
@@ -27,7 +27,7 @@ cargo install secretscan
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/secretscan.git
+git clone https://github.com/marcuspat/secret-scan.git
 cd secretscan
 cargo install --path .
 ```
@@ -254,7 +254,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/secretscan.git
+git clone https://github.com/marcuspat/secret-scan.git
 cd secretscan
 
 # Run tests
@@ -283,7 +283,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/secretscan/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/marcuspat/secret-scan/issues)
 
 ---
 
