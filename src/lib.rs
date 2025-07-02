@@ -1,7 +1,7 @@
-pub mod patterns;
 pub mod entropy;
-pub mod scanner;
 pub mod output;
+pub mod patterns;
+pub mod scanner;
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -16,7 +16,7 @@ pub struct Finding {
     pub entropy: Option<f64>,
 }
 
-pub use scanner::Scanner;
-pub use patterns::*;
 pub use entropy::*;
 pub use output::*;
+pub use patterns::*;
+pub use scanner::Scanner;

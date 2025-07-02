@@ -15,10 +15,10 @@ pub fn google_api_key_pattern() -> Regex {
 
 pub fn get_all_patterns() -> HashMap<String, Regex> {
     let mut patterns = HashMap::new();
-    
+
     patterns.insert("AWS Access Key".to_string(), aws_access_key_pattern());
     patterns.insert("GitHub Token".to_string(), github_token_pattern());
     patterns.insert("Google API Key".to_string(), google_api_key_pattern());
-    
+
     patterns
 }

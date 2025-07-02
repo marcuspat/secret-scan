@@ -1,10 +1,10 @@
 use clap::{Arg, ArgAction, Command};
-use secretscanner::{Scanner, output::*};
-use std::path::PathBuf;
-use std::fs;
-use std::process;
-use indicatif::{ProgressBar, ProgressStyle};
 use colored::*;
+use indicatif::{ProgressBar, ProgressStyle};
+use secretscanner::{output::*, Scanner};
+use std::fs;
+use std::path::PathBuf;
+use std::process;
 
 #[derive(Clone)]
 enum OutputFormat {
@@ -66,7 +66,11 @@ fn main() {
 
     // Validate scan path
     if !scan_path.exists() {
-        eprintln!("{} Path does not exist: {}", "Error:".red().bold(), scan_path.display());
+        eprintln!(
+            "{} Path does not exist: {}",
+            "Error:".red().bold(),
+            scan_path.display()
+        );
         process::exit(1);
     }
 
@@ -130,7 +134,12 @@ fn main() {
             } else {
                 format!(
                     "{}\n\n{}{}",
-                    format!("{} Found {} potential secrets:", "Warning:".yellow().bold(), findings.len()).bold(),
+                    format!(
+                        "{} Found {} potential secrets:",
+                        "Warning:".yellow().bold(),
+                        findings.len()
+                    )
+                    .bold(),
                     format_as_text(&findings),
                     generate_summary(&findings).bright_blue()
                 )
@@ -141,7 +150,12 @@ fn main() {
     // Write output
     if let Some(file_path) = output_file {
         if let Err(e) = fs::write(file_path, &output_content) {
-            eprintln!("{} Failed to write to file {}: {}", "Error:".red().bold(), file_path, e);
+            eprintln!(
+                "{} Failed to write to file {}: {}",
+                "Error:".red().bold(),
+                file_path,
+                e
+            );
             process::exit(1);
         }
         if !quiet {
