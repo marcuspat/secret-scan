@@ -37,7 +37,7 @@ Download pre-built binaries from the [latest release](https://github.com/marcusp
 
 ```bash
 git clone https://github.com/marcuspat/secret-scan.git
-cd secretscan
+cd secret-scan
 cargo install --path .
 ```
 
@@ -88,9 +88,9 @@ Options:
 ### Example Output
 
 ```bash
-$ ./target/release/secretscan test-repo/
+$ secretscan test-repo/
 
-Warning: Found 12 potential secrets:
+Warning: Found 34 potential secrets:
 
 File: test-repo/test/test_secrets.py
 line 6: AWS_KEY = "AKIAIOSFODNN7TESTKEY"
@@ -116,11 +116,12 @@ Pattern: Google API Key
 Match: AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI
 Entropy: 4.7
 
-12 secrets found:
+34 secrets found:
 AWS Access Key: 4
 Google API Key: 4
 GitHub Token: 3
 PostgreSQL URL: 1
+(and 22 more...)
 
 real    0m0.005s
 user    0m0.001s
@@ -170,29 +171,7 @@ secretscan uses advanced regex-based pattern matching to detect secrets:
 
 ## 🔧 Configuration
 
-### Custom Patterns
-
-Create a `.secretscan.toml` file in your project root:
-
-```toml
-[[patterns]]
-name = "Custom API Key"
-pattern = "custom_[a-zA-Z0-9]{32}"
-
-[[patterns]]
-name = "Internal Token"
-pattern = "internal_token_[0-9]{16}"
-```
-
-### Excluding Files
-
-SecretScanner automatically respects `.gitignore`. For additional exclusions:
-
-```bash
-# Create .secretscanignore
-echo "*.log" >> .secretscanignore
-echo "build/" >> .secretscanignore
-```
+SecretScanner automatically respects `.gitignore` patterns for file exclusion. The scanner comes with 50 built-in patterns covering all major secret types.
 
 ## 📊 Performance
 
@@ -232,7 +211,7 @@ secretscan provides **industry-leading detection capabilities** with cutting-edg
 - ✅ **Payment APIs**: Stripe, PayPal, Square with all key variants
 - ✅ **Communication**: SendGrid, Slack, Twilio, Discord tokens
 - ✅ **Multiple formats**: 50+ file types including .txt, config files
-- ✅ **Advanced patterns**: 47 comprehensive secret patterns
+- ✅ **Advanced patterns**: 50 comprehensive secret patterns
 - ❌ **Intelligently filtered**: Test fixtures, examples, dummy data
 
 ### Enterprise-Grade Test Results
@@ -252,6 +231,8 @@ First secret scanner to reliably detect:
 - URL encoded DB URLs: `postgres%3A%2F%2Fuser%3Apass%40host`
 
 ## 🔧 Comparison with Other Tools
+
+*Note: Speed comparisons are estimates based on typical performance. Actual results may vary based on hardware and repository characteristics.*
 
 | Feature | secretscan | truffleHog | git-secrets | detect-secrets |
 |---------|------------|------------|-------------|----------------|
@@ -277,7 +258,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ```bash
 # Clone the repository
 git clone https://github.com/marcuspat/secret-scan.git
-cd secretscan
+cd secret-scan
 
 # Run tests
 cargo test
