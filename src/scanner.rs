@@ -293,11 +293,24 @@ impl Scanner {
 
             // Check against all patterns
             for (pattern_name, pattern) in &self.patterns {
+                // Debug logging for AWS patterns when enabled
+                if pattern_name.contains("AWS") && std::env::var("SECRETSCAN_DEBUG").is_ok() {
+                    eprintln!("[DEBUG] Testing AWS pattern '{}' against line: {}", pattern_name, line.trim());
+                }
+                
                 if let Some(mat) = pattern.find(&line) {
                     let matched_text = mat.as_str().to_string();
+                    
+                    // Debug logging for successful matches
+                    if pattern_name.contains("AWS") && std::env::var("SECRETSCAN_DEBUG").is_ok() {
+                        eprintln!("[DEBUG] AWS pattern '{}' MATCHED: '{}'", pattern_name, matched_text);
+                    }
 
                     // Apply context filtering for line content
                     if self.context_filter.should_skip_line(&line, &matched_text) {
+                        if pattern_name.contains("AWS") && std::env::var("SECRETSCAN_DEBUG").is_ok() {
+                            eprintln!("[DEBUG] AWS match skipped by context filter");
+                        }
                         continue;
                     }
 
@@ -305,6 +318,9 @@ impl Scanner {
                     
                     // Apply adaptive entropy filtering based on pattern type and context
                     if Self::should_include_by_entropy_static(pattern_name, &matched_text, entropy, &line) {
+                        if pattern_name.contains("AWS") && std::env::var("SECRETSCAN_DEBUG").is_ok() {
+                            eprintln!("[DEBUG] AWS finding added: {} in {}", matched_text, file_path.display());
+                        }
                         findings.push(Finding {
                             file_path: file_path.to_path_buf(),
                             line_number,
@@ -313,6 +329,8 @@ impl Scanner {
                             matched_text,
                             entropy: Some(entropy),
                         });
+                    } else if pattern_name.contains("AWS") && std::env::var("SECRETSCAN_DEBUG").is_ok() {
+                        eprintln!("[DEBUG] AWS match rejected by entropy filter: {} (entropy: {:.2})", matched_text, entropy);
                     }
                 }
             }

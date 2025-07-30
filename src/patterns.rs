@@ -5,9 +5,9 @@ use base64::{Engine as _, engine::general_purpose};
 
 lazy_static! {
     // AWS Patterns
-    static ref AWS_ACCESS_KEY: Regex = Regex::new(r#"(?i)(aws[_\s\-]?access[_\s\-]?key[_\s\-]?(id)?|AKIA)["']?\s*[:=]\s*["']?([A-Z0-9]{16,20})["']?"#).unwrap();
+    static ref AWS_ACCESS_KEY: Regex = Regex::new(r#"(?i)(aws[_\s\-]?access[_\s\-]?key[_\s\-]?(id)?|AKIA)["']?\s*[:=]\s*[^"']*["']([A-Za-z0-9]{16,20})["']"#).unwrap();
     static ref AWS_SECRET_KEY: Regex = Regex::new(r#"(?i)(aws[_\s\-]?secret[_\s\-]?(access[_\s\-]?)?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+=]{40})["']?"#).unwrap();
-    static ref AWS_ACCESS_KEY_ID: Regex = Regex::new(r"AKIA[0-9A-Z]{16}").unwrap();
+    static ref AWS_ACCESS_KEY_ID: Regex = Regex::new(r"(?i)AKIA[0-9A-Za-z]{16}").unwrap();
     
     // GitHub Patterns
     static ref GITHUB_TOKEN: Regex = Regex::new(r"(ghp|gho|ghu|ghs|ghr)_[0-9A-Za-z]{36,}").unwrap();
@@ -87,8 +87,8 @@ lazy_static! {
         let mut patterns = HashMap::new();
         // AWS Patterns
         patterns.insert("AWS Access Key".to_string(), &*AWS_ACCESS_KEY);
-        patterns.insert("AWS Secret Key".to_string(), &*AWS_SECRET_KEY);
         patterns.insert("AWS Access Key ID".to_string(), &*AWS_ACCESS_KEY_ID);
+        patterns.insert("AWS Secret Key".to_string(), &*AWS_SECRET_KEY);
         
         // GitHub Patterns
         patterns.insert("GitHub Token".to_string(), &*GITHUB_TOKEN);
@@ -173,8 +173,8 @@ pub fn get_all_patterns_owned() -> HashMap<String, Regex> {
     let mut patterns = HashMap::new();
     // AWS Patterns
     patterns.insert("AWS Access Key".to_string(), AWS_ACCESS_KEY.clone());
-    patterns.insert("AWS Secret Key".to_string(), AWS_SECRET_KEY.clone());
     patterns.insert("AWS Access Key ID".to_string(), AWS_ACCESS_KEY_ID.clone());
+    patterns.insert("AWS Secret Key".to_string(), AWS_SECRET_KEY.clone());
     
     // GitHub Patterns
     patterns.insert("GitHub Token".to_string(), GITHUB_TOKEN.clone());

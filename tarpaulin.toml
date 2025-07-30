@@ -1,0 +1,70 @@
+[tool.tarpaulin]
+# Exclude patterns for coverage
+exclude = [
+    "/*",
+    "src/main.rs",
+    "debug_entropy.rs"
+]
+
+# Include patterns for coverage
+include = [
+    "src/*",
+    "tests/*"
+]
+
+# Output configuration
+out = ["Html", "Xml", "Json"]
+output-dir = "coverage"
+
+# Coverage engine
+engine = "llvm"
+run-types = ["Tests", "Doctests"]
+
+# Timeout configuration (increased to handle slow tests)
+timeout = 300
+
+# Force clean rebuild for better coverage accuracy
+force-clean = true
+
+# Skip clean to speed up subsequent runs
+skip-clean = false
+
+# Workspace support
+workspace = true
+
+# Ignore failing tests for coverage collection
+ignore-tests = false
+
+# Count hits per line
+count = true
+
+# Generate line coverage
+line = true
+
+# Generate branch coverage  
+branch = true
+
+# Post test run hooks
+post-args = ["--release"]
+
+# Verbose output for debugging
+verbose = true
+
+# Features to enable during testing
+features = "default"
+
+# Test threads
+test-threads = 1
+
+# Follow symbolic links
+follow-links = false
+
+# Fail on empty coverage
+fail-under = 70
+
+# Exclude dependencies from coverage
+exclude-files = [
+    "target/*",
+    "*/tests/*",
+    "benches/*"
+]
