@@ -1,0 +1,36 @@
+# Production configuration with secrets
+database:
+  host: "prod-db.company.com"
+  username: "prod_user"
+  password: "super_secret_password_123"
+  connection_string: "postgresql://user:password123@prod-db.company.com:5432/maindb"
+
+aws:
+  access_key_id: "AKIAIOSFODNN7TESTKEY"
+  secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  region: "us-west-2"
+
+google:
+  api_key: "AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI"
+  firebase_key: "AAAA1234567890:APA91bHun4MxP5egoKMwt2KkAH-IuLux"
+
+github:
+  token: "ghp_1234567890abcdefghijklmnopqrstuvwxyz"
+  oauth_secret: "GOCSPX-1234567890abcdefghijklmnopqrstuvwxyz"
+
+stripe:
+  live_key: "sk_live_51234567890abcdefghijklmnopqrstuvwxyz"
+  test_key: "sk_test_51234567890abcdefghijklmnopqrstuvwxyz"
+
+sendgrid:
+  api_key: "SG.1234567890abcdefghijklmnopqrstuvwxyz"
+
+slack:
+  bot_token: "xoxb-1234567890-1234567890-abcdefghijklmnopqrstuvwxyz"
+  webhook: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+
+mongodb:
+  connection: "mongodb://user:password@mongodb.company.com:27017/production"
+
+redis:
+  url: "redis://user:password@redis.company.com:6379/0"
